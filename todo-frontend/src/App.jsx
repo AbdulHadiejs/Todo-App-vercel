@@ -4,10 +4,9 @@ import toast from "react-hot-toast";
 
 export const getUrl = () => {
   const isHosted = window.location.href.includes("https");
-  const baseUrl = isHosted
+  return isHosted
     ? "https://smit-backend-batch-11.vercel.app"
     : "http://localhost:5173";
-  return baseUrl;
 };
 
 export default function App() {
@@ -16,16 +15,15 @@ export default function App() {
 
   const getTodo = async () => {
     try {
-      const res = await axios(`${getUrl()}/api/v1/todos`);
-      const serverTodos = res?.data?.data || [];
+      const res = await axios.get(`${getUrl()}/api/v1/todos`);
+      const serverTodos = res.data.data || [];
       const editTodo = serverTodos.map((todo) => ({
         ...todo,
         isEditing: false,
       }));
       setTodos(editTodo);
     } catch (error) {
-      toast.dismiss();
-      toast.error(error?.response?.data?.message || "Error fetching todos");
+      toast.error(error.response?.data?.message || "Error fetching todos");
     }
   };
 
@@ -45,28 +43,24 @@ export default function App() {
       getTodo();
       setNewTodo("");
     } catch (error) {
-      toast.dismiss();
-      toast.error(error?.response?.data?.message || "Error adding todo");
+      toast.error(error.response?.data?.message || "Error adding todo");
     }
   };
 
   const editTodo = async (event, todoId) => {
     event.preventDefault();
-    const todoValue = event.target.children[0].value;
+    const todoContent = event.target.children[0].value;
 
-    if (!todoValue.trim()) {
+    if (!todoContent.trim()) {
       toast.error("Please enter valid content for the todo.");
       return;
     }
 
     try {
-      await axios.patch(`${getUrl()}/api/v1/todo/${todoId}`, {
-        todo: todoValue,
-      });
+      await axios.patch(`${getUrl()}/api/v1/todo/${todoId}`, { todoContent });
       getTodo();
     } catch (error) {
-      toast.dismiss();
-      toast.error(error?.response?.data?.message || "Error updating todo");
+      toast.error(error.response?.data?.message || "Error updating todo");
     }
   };
 
@@ -76,28 +70,26 @@ export default function App() {
       toast.success("Todo deleted successfully");
       getTodo();
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Error deleting todo");
+      toast.error(error.response?.data?.message || "Error deleting todo");
     }
   };
 
   const clearTodos = async () => {
     try {
-      await Promise.all(todos.map((todo) => deleteTodo(todo.id)));
+      const ids = todos.map((todo) => todo._id);
+      await Promise.all(ids.map((id) => axios.delete(`${getUrl()}/api/v1/todo/${id}`)));
       toast.success("All todos cleared successfully");
+      getTodo();
     } catch (error) {
       toast.error("Error clearing todos");
     }
   };
 
   const toggleEditing = (index) => {
-    const newTodos = todos.map((todo, i) => {
-      if (i === index) {
-        todo.isEditing = !todo.isEditing;
-      } else {
-        todo.isEditing = false;
-      }
-      return todo;
-    });
+    const newTodos = todos.map((todo, i) => ({
+      ...todo,
+      isEditing: i === index ? !todo.isEditing : false,
+    }));
     setTodos(newTodos);
   };
 
@@ -122,7 +114,7 @@ export default function App() {
           <div className="space-y-4">
             {todos.map((todo, index) => (
               <div
-                key={todo.id}
+                key={todo._id}
                 className="flex items-center justify-between p-4 bg-gray-100 rounded-xl shadow-md"
               >
                 <div>
@@ -131,7 +123,7 @@ export default function App() {
                       {todo.todoContent}
                     </span>
                   ) : (
-                    <form onSubmit={(e) => editTodo(e, todo.id)}>
+                    <form onSubmit={(e) => editTodo(e, todo._id)}>
                       <input
                         type="text"
                         defaultValue={todo.todoContent}
@@ -148,7 +140,7 @@ export default function App() {
                     {todo.isEditing ? "✔️" : "🖍"}
                   </button>
                   <button
-                    onClick={() => deleteTodo(todo.id)}
+                    onClick={() => deleteTodo(todo._id)}
                     className="text-red-500"
                   >
                     🗑️
