@@ -1,125 +1,58 @@
 import express from "express";
 import cors from "cors";
-import 'dotenv/config';
-import './database.js';
+import "dotenv/config";
+import "./database.js"; // Ensure your database is set up properly
 import { Todo } from "./model/index.js";
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5173;
 
-// Middleware
 app.use(express.json());
-app.use(
-  cors({
-    origin: [
-      "todo-backend-hd.surge.sh",
-    ],
-  })
-);
+app.use(cors({ 
+  origin: ["http://localhost:5173", "https://your-frontend.surge.sh"] 
+}));
 
-// Get all todos
 app.get("/api/v1/todos", async (req, res) => {
   try {
-    const todos = await Todo.find({}, { __v: 0, updatedAt: 0 }) // Exclude metadata
-      .sort({ _id: -1 }) // Sort by newest first
-      .lean(); // Return plain objects instead of Mongoose documents
-
-    const formattedTodos = todos.map(todo => ({
-      id: todo._id, // Map `_id` to `id`
-      todoContent: todo.todoContent,
-    }));
-
-    res.status(200).send({
-      data: formattedTodos,
-      message: formattedTodos.length ? "Todos fetched successfully" : "No todos found",
-    });
+    const todos = await Todo.find().sort({ _id: -1 });
+    res.status(200).json({ data: todos });
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Internal server error" });
+    res.status(500).json({ message: "Error fetching todos" });
   }
 });
 
-// Add a new todo
 app.post("/api/v1/todo", async (req, res) => {
-  const { todoContent } = req.body;
-
-  if (!todoContent) {
-    return res.status(400).send({ message: "todoContent is required" });
-  }
-
   try {
-    const newTodo = await Todo.create({ todoContent, ip: req.ip });
+    const { todoContent } = req.body;
+    if (!todoContent) return res.status(400).send({ message: "Content is required" });
 
-    res.status(201).send({
-      message: "Todo added successfully",
-      data: {
-        id: newTodo._id, // Return `id` instead of `_id`
-        todoContent: newTodo.todoContent,
-      },
-    });
+    const newTodo = await Todo.create({ todoContent });
+    res.status(201).json({ data: newTodo });
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Error adding todo" });
+    res.status(500).json({ message: "Error adding todo" });
   }
 });
 
-// Update an existing todo
 app.patch("/api/v1/todo/:id", async (req, res) => {
-  const { id } = req.params;
-  const { todoContent } = req.body;
-
-  if (!todoContent) {
-    return res.status(400).send({ message: "todoContent is required" });
-  }
-
   try {
-    const updatedTodo = await Todo.findByIdAndUpdate(
-      id,
-      { todoContent },
-      { new: true, lean: true } // Return the updated document
-    );
+    const updatedTodo = await Todo.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedTodo) return res.status(404).json({ message: "Todo not found" });
 
-    if (!updatedTodo) {
-      return res.status(404).send({ message: "Todo not found" });
-    }
-
-    res.status(200).send({
-      message: "Todo updated successfully",
-      data: {
-        id: updatedTodo._id, // Return `id` instead of `_id`
-        todoContent: updatedTodo.todoContent,
-      },
-    });
+    res.status(200).json({ data: updatedTodo });
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Error updating todo" });
+    res.status(500).json({ message: "Error updating todo" });
   }
 });
 
-// Delete a todo
 app.delete("/api/v1/todo/:id", async (req, res) => {
-  const { id } = req.params;
-
   try {
-    const deletedTodo = await Todo.findByIdAndDelete(id);
+    const deletedTodo = await Todo.findByIdAndDelete(req.params.id);
+    if (!deletedTodo) return res.status(404).json({ message: "Todo not found" });
 
-    if (!deletedTodo) {
-      return res.status(404).send({ message: "Todo not found" });
-    }
-
-    res.status(200).send({ message: "Todo deleted successfully" });
+    res.status(200).json({ message: "Todo deleted" });
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "Error deleting todo" });
+    res.status(500).json({ message: "Error deleting todo" });
   }
 });
 
-// Fallback for undefined routes
-app.use((req, res) => {
-  res.status(404).send({ message: "No route found" });
-});
-
-// Start the server
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+app.listen(port, () => console.log(`Server running on http://localhost:${port}`));
