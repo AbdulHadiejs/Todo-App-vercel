@@ -6,7 +6,7 @@ export default function App() {
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState("");
 
-  const base_Url = "http://localhost:3000"; // Backend URL (Express server)
+  const base_Url = "https://todo-app-vercel-mauve.vercel.app"; // Backend URL (Express server)
 
   const getTodo = async () => {
     try {

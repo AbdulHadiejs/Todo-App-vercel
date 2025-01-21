@@ -12,9 +12,7 @@ app.use(express.json());
 app.use(
   cors({
     origin: [
-      "http://localhost:5173", // Local Frontend
-      "https://frontend.surge.sh", // Deployed Frontend
-      "https://marvelous-capybara-0bee09.netlify.app", // Deployed Frontend
+      "todo-backend-hd.surge.sh",
     ],
   })
 );
