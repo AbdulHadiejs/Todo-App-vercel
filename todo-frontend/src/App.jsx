@@ -4,9 +4,10 @@ import toast from "react-hot-toast";
 
 export const getUrl = () => {
   const isHosted = window.location.href.includes("https");
-  return isHosted
+   const baseUrl = isHosted
     ? "https://smit-backend-batch-11.vercel.app"
     : "http://localhost:5173";
+    return baseUrl;
 };
 
 export default function App() {
@@ -32,20 +33,25 @@ export default function App() {
   }, []);
 
   const addTodo = async (event) => {
-    event.preventDefault();
-    if (!newTodo.trim()) {
-      toast.error("Please enter a todo.");
-      return;
-    }
-
     try {
-      await axios.post(`${getUrl()}/api/v1/todo`, { todoContent: newTodo });
+      event.preventDefault();
+
+      const todoValue = event.target.children[0].value;
+
+      await axios.post(`${getUrl()}/api/v1/todo`, {
+        todoContent: todoValue,
+      });
       getTodo();
-      setNewTodo("");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Error adding todo");
+
+      event.target.reset();
+    } catch (err) {
+      console.log('err:', err);
+
+      toast.dismiss()
+      toast.error(err?.response?.data?.message || "unknown errorrr");
     }
   };
+
 
   const editTodo = async (event, todoId) => {
     event.preventDefault();

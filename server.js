@@ -5,26 +5,18 @@ import "./database.js"; // Ensure your database is set up properly
 import { Todo } from "./model/index.js";
 
 const app = express();
-const port = process.env.PORT || 5173;
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        "http://localhost:5173",
-        "https://your-frontend.surge.sh",
-        "https://todo-app-vercel-mauve.vercel.app/api/v1/todos"
-      ];
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-  })
-);
+app.use(cors({
+  origin: [
+    "https://todo-backend-hd.surge.sh", // Frontend domain
+    "http://localhost:5173",           // Local development
+  ],
+  methods: ["GET", "POST", "PATCH", "DELETE"], // Allowed methods
+  credentials: true, // Allow cookies if needed
+}));
 
 // Routes
 app.get("/api/v1/todos", async (req, res) => {
@@ -38,18 +30,14 @@ app.get("/api/v1/todos", async (req, res) => {
 });
 
 app.post("/api/v1/todo", async (req, res) => {
-  try {
-    const { todoContent } = req.body;
-    if (!todoContent) {
-      return res.status(400).json({ message: "Content is required" });
-    }
+  const obj = {
+    todoContent: request.body.todo,
+    ip: request.ip,
+  };
 
-    const newTodo = await Todo.create({ todoContent });
-    res.status(201).json({ data: newTodo });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error adding todo" });
-  }
+  const result = await Todo.create(obj)
+
+  response.send({ message: "todo add hogya hy", data: result });
 });
 
 app.patch("/api/v1/todo/:id", async (req, res) => {
